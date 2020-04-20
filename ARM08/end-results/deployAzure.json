@@ -1,0 +1,115 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "storageName": {
+           "type": "string",
+           "metadata": {
+                "description": "Default storage name."
+            }
+        },
+        "extra": {
+           "type": "string",
+           "allowedValues": [
+               "none",
+               "extraStorage"
+            ],
+           "metadata": {
+                "description": "What kind of Extra would you like?"
+            }
+        },
+        "extraStorageName": {
+           "type": "string",
+           "metadata": {
+                "description": "(if extra selected) NAme of the extra storage"
+            }
+        }
+    },
+    "functions": [],
+    "variables": {
+        "suffix": "[substring(toLower(uniqueString(resourceGroup().id, resourceGroup().location)),0,5)]",
+        "stgName": "[toLower(concat(parameters('storageName'), variables('suffix')))]",
+        "identityName": "[concat('ScriptUser', '-bootstrap')]",
+        "bootstrapRoleAssignmentId": "[guid(concat(resourceGroup().id, 'contributor'))]",
+        "contributorRoleDefinitionId": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Authorization/roleDefinitions/', 'b24988ac-6180-42a0-ab88-20f7382dd24c')]"
+    },
+    "resources": [
+        {
+            "name": "[variables('stgName')]",
+            "type": "Microsoft.Storage/storageAccounts",
+            "apiVersion": "2019-06-01",
+            "tags": {
+                "displayName": "[variables('stgName')]"
+            },
+            "location": "[resourceGroup().location]",
+            "kind": "StorageV2",
+            "sku": {
+               "name": "Premium_LRS",
+               "tier": "Premium"
+             }
+        },
+        {
+            "name": "ExtraDeployment",
+            "type": "Microsoft.Resources/deployments",
+            "condition": "[equals(parameters('extra'), 'extraStorage')]",
+            "apiVersion": "2019-10-01",
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "https://fboucherdemo.blob.core.windows.net/temp/deployMore.json"
+                },
+                "parameters": {
+                    "storageName": {
+                        "value" : "[parameters('extraStorageName')]"
+                    }
+                }
+            }
+        },
+        {
+            "type": "Microsoft.ManagedIdentity/userAssignedIdentities",
+            "name": "[variables('identityName')]",
+            "apiVersion": "2018-11-30",
+            "location": "[resourceGroup().location]"
+        },
+        {
+            "type": "Microsoft.Authorization/roleAssignments",
+            "apiVersion": "2018-09-01-preview",
+            "name": "[variables('bootstrapRoleAssignmentId')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('identityName'))]"
+            ],
+            "properties": {
+                "roleDefinitionId": "[variables('contributorRoleDefinitionId')]",
+                "principalId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('identityName')), '2018-11-30').principalId]",
+                "scope": "[resourceGroup().id]",
+                "principalType": "ServicePrincipal"
+            }
+        },
+        {
+            "type": "Microsoft.Resources/deploymentScripts",
+            "apiVersion": "2019-10-01-preview",
+            "name": "runCopyFile",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "ExtraDeployment"
+            ],
+            "kind": "AzureCLI", 
+            "identity": {
+                "type": "userAssigned",
+                "userAssignedIdentities": {
+                    "[resourceID('Microsoft.ManagedIdentity/userAssignedIdentities/',variables('identityName'))]": {}
+                }
+            },
+            "properties": {
+                "forceUpdateTag": "1",
+                "AzCliVersion": "2.0.80",
+                "arguments": "'37uF0ZUTdx72l0gngzml2/UeRKtMlFJrRmIAZvF8WoF8Mw7M5pmGV05FdSOgdTWLT+xaVchM3lxqbcq1QjAIYQ=='",
+                "primaryScriptUri": "https://fboucherdemo.blob.core.windows.net/temp/copyFiles.sh",
+                "timeout": "PT30M",
+                "cleanupPreference": "OnExpiration",
+                "retentionInterval": "P1D"
+            }
+        }
+    ],
+    "outputs": {}
+}

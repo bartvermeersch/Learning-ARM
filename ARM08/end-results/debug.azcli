@@ -1,0 +1,26 @@
+
+
+
+az group create -n ToDeleteNow -l eastus
+
+# validate with Parameter file
+az group deployment validate -g ToDeleteNow  --template-file "deployAzure.json" --parameters "deployAzure.parameters.json"  --verbose 
+
+# deploy it
+az group deployment create  -g ToDeleteNow -n cloud5minsv1 --template-file "deployAzure.json" --parameters "deployAzure.parameters.json" --verbose 
+
+
+
+# az storage container create --auth-mode key  --account-name frankextra4lyrd --name images --account-key 37uF0ZUTdx72l0gngzml2/UeRKtMlFJrRmIAZvF8WoF8Mw7M5pmGV05FdSOgdTWLT+xaVchM3lxqbcq1QjAIYQ==
+
+# wget "https://raw.githubusercontent.com/FBoucher/AzUrlShortener/master/medias/UrlShortener_600.png"
+
+
+# az storage blob upload --account-name frankextra4lyrd --account-key 37uF0ZUTdx72l0gngzml2/UeRKtMlFJrRmIAZvF8WoF8Mw7M5pmGV05FdSOgdTWLT+xaVchM3lxqbcq1QjAIYQ== -c images -f "UrlShortener_600.png" -n "UrlShortener.png"  --verbose
+
+
+# az storage blob copy start --account-name frankextra4lyrd --account-key 37uF0ZUTdx72l0gngzml2/UeRKtMlFJrRmIAZvF8WoF8Mw7M5pmGV05FdSOgdTWLT+xaVchM3lxqbcq1QjAIYQ== --destination-blob "UrlShortener_600.png" --destination-container images --source-uri "https://raw.githubusercontent.com/FBoucher/AzUrlShortener/master/medias/UrlShortener_600.png"
+
+
+# az storage blob upload --file ./UrlShortener_600.png --container-name images  --name "UrlShortener.png" --account-name frankextra4lyrd --account-key 37uF0ZUTdx72l0gngzml2/UeRKtMlFJrRmIAZvF8WoF8Mw7M5pmGV05FdSOgdTWLT+xaVchM3lxqbcq1QjAIYQ==
+
